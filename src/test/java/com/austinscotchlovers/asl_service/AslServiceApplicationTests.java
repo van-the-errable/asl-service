@@ -9,5 +9,4 @@ class AslServiceApplicationTests {
 	@Test
 	void contextLoads() {
 	}
-
 }
