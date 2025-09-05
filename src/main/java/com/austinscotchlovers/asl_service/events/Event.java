@@ -1,6 +1,6 @@
 package com.austinscotchlovers.asl_service.events;
 
-import com.austinscotchlovers.asl_service.user.User;
+import com.austinscotchlovers.asl_service.users.User;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;

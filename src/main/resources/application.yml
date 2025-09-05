@@ -1,5 +1,6 @@
 app:
   api:
+    users-path: /api/v1/users
     events-path: /api/v1/events
 spring:
   application:

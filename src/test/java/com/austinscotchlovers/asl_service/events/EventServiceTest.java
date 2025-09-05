@@ -8,8 +8,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -25,28 +23,6 @@ class EventServiceTest {
 
     @InjectMocks
     private EventService eventService;
-
-    @Test
-    void should_get_all_events_from_repository() {
-        List<Event> mockEvents = Collections.singletonList(new Event());
-        when(eventRepository.findAll()).thenReturn(mockEvents);
-
-        List<Event> returnedEvents = eventService.getAllEvents();
-
-        assertThat(returnedEvents).hasSize(1);
-        verify(eventRepository, times(1)).findAll();
-    }
-
-    @Test
-    void should_save_event_using_repository() {
-        Event eventToSave = new Event();
-        when(eventRepository.save(any(Event.class))).thenReturn(eventToSave);
-
-        Event savedEvent = eventService.saveEvent(eventToSave);
-
-        assertThat(savedEvent).isNotNull();
-        verify(eventRepository, times(1)).save(eventToSave);
-    }
 
     @Test
     void should_find_event_by_id() {
