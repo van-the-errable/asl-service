@@ -1,6 +1,5 @@
 package com.austinscotchlovers.asl_service.config;
 
-import com.austinscotchlovers.asl_service.users.security.Role;
 import com.austinscotchlovers.asl_service.users.security.CustomUserDetailsService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -39,6 +38,7 @@ public class SecurityConfig {
                 .userDetailsService(customUserDetailsService)
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
+                        .accessDeniedHandler((request, response, accessDeniedException) -> response.setStatus(HttpStatus.FORBIDDEN.value()))
                 )
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/").permitAll()

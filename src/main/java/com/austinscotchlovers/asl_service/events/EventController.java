@@ -1,5 +1,7 @@
 package com.austinscotchlovers.asl_service.events;
 
+import com.austinscotchlovers.asl_service.events.dto.EventDto;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -29,8 +31,8 @@ public class EventController {
     }
 
     @PostMapping
-    public ResponseEntity<Event> createEvent(@RequestBody Event event) {
-        Event createdEvent = eventService.saveEvent(event);
+    public ResponseEntity<Event> createEvent(@Valid @RequestBody EventDto eventDto) {
+        Event createdEvent = eventService.saveEvent(eventDto);
 
         URI location = ServletUriComponentsBuilder
                 .fromCurrentRequest()
@@ -42,8 +44,8 @@ public class EventController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Event> updateEvent(@PathVariable Long id, @RequestBody Event updatedEvent) {
-        Event event = eventService.updateEvent(id, updatedEvent);
+    public ResponseEntity<Event> updateEvent(@PathVariable Long id, @Valid @RequestBody EventDto updatedEventDto) {
+        Event event = eventService.updateEvent(id, updatedEventDto);
         return ResponseEntity.ok(event);
     }
 

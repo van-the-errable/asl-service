@@ -1,5 +1,6 @@
 package com.austinscotchlovers.asl_service.users;
 
+import com.austinscotchlovers.asl_service.exceptions.DuplicateUserException;
 import com.austinscotchlovers.asl_service.users.dto.UserUpdateDto;
 import com.austinscotchlovers.asl_service.users.security.Role;
 import com.austinscotchlovers.asl_service.users.security.WithMockCustomUser;
@@ -47,6 +48,8 @@ class UserControllerTest {
 
     private User testUser;
 
+    private UserUpdateDto testUserUpdateDto;
+
     @BeforeEach
     void setUp() {
 
@@ -59,8 +62,24 @@ class UserControllerTest {
                 .withEmail("test@example.com")
                 .withUsername("testUser")
                 .withRole(Role.MEMBER)
+                .withFirstName("Test")
+                .withLastName("User")
+                .withName("Test User")
+                .withProfilePictureUrl("http://example.com/pic.jpg")
+                .withPhoneNumber("555-123-4567")
                 .build();
         testUser.setId(1L);
+
+        testUserUpdateDto = new UserUpdateDto(
+                "updated@example.com",
+                "updatedUser",
+                "Updated",
+                "User",
+                "Updated User",
+                "http://updated-example.com/pic.jpg",
+                "555-987-6543",
+                null
+        );
     }
 
     @Test
@@ -97,22 +116,11 @@ class UserControllerTest {
                 .withRole(Role.ADMIN)
                 .build();
 
-        UserUpdateDto updatedDto = new UserUpdateDto(
-                updatedUser.getEmail(),
-                updatedUser.getUsername(),
-                updatedUser.getFirstName(),
-                updatedUser.getLastName(),
-                updatedUser.getName(),
-                updatedUser.getProfilePictureUrl(),
-                updatedUser.getPhoneNumber(),
-                updatedUser.getAddress()
-        );
-
         when(userService.updateUser(eq(1L), any(UserUpdateDto.class))).thenReturn(updatedUser);
 
         mockMvc.perform(put("/api/v1/users/1")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updatedDto))
+                        .content(objectMapper.writeValueAsString(testUserUpdateDto))
                         .with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("updated@example.com"));
@@ -126,12 +134,19 @@ class UserControllerTest {
                 .andExpect(status().isNoContent());
     }
 
-
     @Test
     @WithMockCustomUser(roles = "ADMIN")
     void should_return_not_found_when_user_to_update_does_not_exist() throws Exception {
-        UserUpdateDto updatedDto = new UserUpdateDto("nonexistent@example.com", "nonexistent", null, null, null, null, null, null);
-
+        UserUpdateDto updatedDto = new UserUpdateDto(
+                "nonexistent@example.com",
+                "nonexistent",
+                "validFirst",
+                "validLast",
+                "validName",
+                null,
+                null,
+                null
+        );
         when(userService.updateUser(eq(100L), any(UserUpdateDto.class))).thenThrow(new RuntimeException("User not found"));
 
         mockMvc.perform(put("/api/v1/users/100")
@@ -139,6 +154,44 @@ class UserControllerTest {
                         .content(objectMapper.writeValueAsString(updatedDto))
                         .with(csrf()))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockCustomUser(roles = "ADMIN")
+    void should_return_bad_request_when_updating_with_invalid_data() throws Exception {
+        UserUpdateDto invalidDto = new UserUpdateDto(
+                "",
+                "valid_username",
+                "valid_first",
+                "valid_last",
+                "valid_name",
+                "not-a-url",
+                "123",
+                null
+        );
+
+        mockMvc.perform(put("/api/v1/users/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidDto))
+                        .with(csrf()))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void should_return_conflict_when_creating_user_with_duplicate_data() throws Exception {
+        User newUser = User.builder()
+                .withEmail("existing@example.com")
+                .withUsername("existingUser")
+                .withRole(Role.MEMBER)
+                .build();
+
+        when(userService.saveUser(any(User.class))).thenThrow(new DuplicateUserException("Email or username already exists"));
+
+        mockMvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(newUser))
+                        .with(csrf()))
+                .andExpect(status().isConflict());
     }
 
     @Test
@@ -160,22 +213,11 @@ class UserControllerTest {
                 .withRole(Role.MEMBER)
                 .build();
 
-        UserUpdateDto updatedDto = new UserUpdateDto(
-                updatedUser.getEmail(),
-                updatedUser.getUsername(),
-                updatedUser.getFirstName(),
-                updatedUser.getLastName(),
-                updatedUser.getName(),
-                updatedUser.getProfilePictureUrl(),
-                updatedUser.getPhoneNumber(),
-                updatedUser.getAddress()
-        );
-
         when(userService.updateUser(eq(1L), any(UserUpdateDto.class))).thenReturn(updatedUser);
 
         mockMvc.perform(put("/api/v1/users/1")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updatedDto))
+                        .content(objectMapper.writeValueAsString(testUserUpdateDto))
                         .with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("updated@example.com"));

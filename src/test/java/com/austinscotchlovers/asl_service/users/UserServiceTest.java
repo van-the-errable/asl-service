@@ -1,5 +1,6 @@
 package com.austinscotchlovers.asl_service.users;
 
+import com.austinscotchlovers.asl_service.exceptions.DuplicateUserException;
 import com.austinscotchlovers.asl_service.users.dto.UserUpdateDto;
 import com.austinscotchlovers.asl_service.users.mapper.UserMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,6 +32,7 @@ class UserServiceTest {
 
     private User testUser;
     private final Long userId = 1L;
+    private UserUpdateDto testUserUpdateDto;
 
     @BeforeEach
     void setUp() {
@@ -38,6 +40,17 @@ class UserServiceTest {
         testUser.setId(userId);
         testUser.setFirstName("John");
         testUser.setLastName("Doe");
+
+        testUserUpdateDto = new UserUpdateDto(
+                "jane.smith@example.com",
+                "janesmith",
+                "Jane",
+                "Smith",
+                "Jane Smith",
+                "http://new-pic.url/jane.jpg",
+                "555-123-4567",
+                null
+        );
     }
 
     @Test
@@ -122,6 +135,16 @@ class UserServiceTest {
         verify(userRepository, times(1)).findById(userId);
         verify(userRepository, times(1)).save(any(User.class));
         verify(userMapper, times(1)).updateUserFromDto(updatedDto, testUser);
+    }
+
+    @Test
+    void should_throw_exception_when_updating_user_with_duplicate_email() {
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+        when(userRepository.save(any(User.class))).thenThrow(DataIntegrityViolationException.class);
+
+        assertThrows(DuplicateUserException.class, () -> userService.updateUser(userId, testUserUpdateDto));
+        verify(userRepository, times(1)).findById(userId);
+        verify(userRepository, times(1)).save(any(User.class));
     }
 
     @Test

@@ -2,6 +2,7 @@ package com.austinscotchlovers.asl_service.users;
 
 import com.austinscotchlovers.asl_service.users.dto.UserUpdateDto;
 import com.austinscotchlovers.asl_service.users.security.CustomUserPrincipal;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -42,7 +43,7 @@ public class UserController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or #id == authentication.principal.user.id")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody UserUpdateDto updatedDto, @AuthenticationPrincipal CustomUserPrincipal principal) {
+    public ResponseEntity<User> updateUser(@PathVariable Long id, @Valid @RequestBody UserUpdateDto updatedDto, @AuthenticationPrincipal CustomUserPrincipal principal) {
         try {
             User user = userService.updateUser(id, updatedDto);
             return ResponseEntity.ok(user);

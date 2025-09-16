@@ -1,12 +1,17 @@
 package com.austinscotchlovers.asl_service.events;
 
+import com.austinscotchlovers.asl_service.events.dto.EventDto;
+import com.austinscotchlovers.asl_service.events.mapper.EventMapper;
 import com.austinscotchlovers.asl_service.exceptions.EventNotFoundException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Optional;
 
@@ -21,13 +26,24 @@ class EventServiceTest {
     @Mock
     private EventRepository eventRepository;
 
+    @Mock
+    private EventMapper eventMapper;
+
     @InjectMocks
     private EventService eventService;
 
+    private Event event;
+    private EventDto eventDto;
+
+    @BeforeEach
+    void setUp() {
+        event = new Event("Test Event", "A test description", LocalDate.now(), LocalTime.now(), "Test Location", new ArrayList<>());
+        event.setId(1L);
+        eventDto = new EventDto("Test Event", "A test description", LocalDate.now(), LocalTime.now(), "Test Location");
+    }
+
     @Test
     void should_find_event_by_id() {
-        Event event = new Event();
-
         when(eventRepository.findById(anyLong())).thenReturn(Optional.of(event));
         Event foundEvent = eventService.getEventById(1L);
 
@@ -44,34 +60,56 @@ class EventServiceTest {
     }
 
     @Test
-    void should_update_event() {
+    void should_save_event_from_dto() {
+        when(eventMapper.fromDto(any(EventDto.class))).thenReturn(event);
+        when(eventRepository.save(any(Event.class))).thenReturn(event);
+
+        Event savedEvent = eventService.saveEvent(eventDto);
+
+        assertThat(savedEvent).isNotNull();
+        verify(eventMapper, times(1)).fromDto(eventDto);
+        verify(eventRepository, times(1)).save(event);
+    }
+
+    @Test
+    void should_update_event_from_dto() {
         Event existingEvent = new Event("Old Name", "Old Desc", null, null, null, new ArrayList<>());
         existingEvent.setId(1L);
-        Event updatedEvent = new Event("New Name", "New Desc", null, null, null, new ArrayList<>());
 
         when(eventRepository.findById(1L)).thenReturn(Optional.of(existingEvent));
-        when(eventRepository.save(any(Event.class))).thenReturn(updatedEvent);
+        when(eventRepository.save(any(Event.class))).thenReturn(existingEvent);
 
-        Event result = eventService.updateEvent(1L, updatedEvent);
+        eventService.updateEvent(1L, eventDto);
 
-        assertThat(result.getName()).isEqualTo("New Name");
         verify(eventRepository, times(1)).findById(1L);
-        verify(eventRepository, times(1)).save(any(Event.class));
+        verify(eventMapper, times(1)).updateEventFromDto(eventDto, existingEvent);
+        verify(eventRepository, times(1)).save(existingEvent);
+    }
+
+    @Test
+    void should_throw_exception_when_updating_non_existent_event() {
+        when(eventRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(EventNotFoundException.class, () -> eventService.updateEvent(1L, eventDto));
+        verify(eventRepository, times(1)).findById(1L);
+        verify(eventRepository, never()).save(any(Event.class));
     }
 
     @Test
     void should_delete_event() {
-        when(eventRepository.existsById(anyLong())).thenReturn(true);
+        when(eventRepository.existsById(1L)).thenReturn(true);
+
         eventService.deleteEvent(1L);
 
         verify(eventRepository, times(1)).deleteById(1L);
     }
 
     @Test
-    void should_throw_exception_when_deleting_non_existent_event() {
-        when(eventRepository.existsById(anyLong())).thenReturn(false);
+    void should_throw_exception_when_deleting_nonexistent_event() {
+        when(eventRepository.existsById(1L)).thenReturn(false);
 
         assertThrows(EventNotFoundException.class, () -> eventService.deleteEvent(1L));
-        verify(eventRepository, times(0)).deleteById(1L);
+
+        verify(eventRepository, never()).deleteById(anyLong());
     }
 }
